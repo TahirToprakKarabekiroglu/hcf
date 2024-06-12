@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="COIN_assets.png">
+	<!-- Created with Adobe Animate version 22.0.8.217 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="coin hold0000" x="2" y="2" width="50" height="44"/>
+	<SubTexture name="coin hold end0000" x="54" y="2" width="50" height="64"/>
+	<SubTexture name="coin100_0000" x="106" y="2" width="128" height="128"/>
+	<SubTexture name="coin25_0000" x="236" y="2" width="128" height="128"/>
+	<SubTexture name="coin500_0000" x="366" y="2" width="128" height="128"/>
+	<SubTexture name="coin5_0000" x="496" y="2" width="128" height="128"/>
+	<SubTexture name="strum0000" x="626" y="2" width="114" height="114"/>
+	<SubTexture name="strum confirm0000" x="742" y="2" width="147" height="147" frameX="-325" frameY="-328" frameWidth="797" frameHeight="802"/>
+	<SubTexture name="strum confirm0001" x="891" y="2" width="795" height="801" frameX="-1" frameY="-1" frameWidth="797" frameHeight="802"/>
+	<SubTexture name="strum confirm0002" x="2" y="805" width="797" height="796" frameX="0" frameY="0" frameWidth="797" frameHeight="802"/>
+	<SubTexture name="strum confirm0003" x="2" y="805" width="797" height="796" frameX="0" frameY="0" frameWidth="797" frameHeight="802"/>
+	<SubTexture name="strum pressed0000" x="801" y="805" width="104" height="103" frameX="-5" frameY="-2" frameWidth="114" frameHeight="114"/>
+	<SubTexture name="strum pressed0001" x="801" y="805" width="104" height="103" frameX="-5" frameY="-2" frameWidth="114" frameHeight="114"/>
+	<SubTexture name="strum pressed0002" x="907" y="805" width="114" height="114"/>
+	<SubTexture name="strum pressed0003" x="907" y="805" width="114" height="114"/>
+</TextureAtlas>
