@@ -14,8 +14,8 @@
 		{
 			"loop": false,
 			"offsets": [
-				5,
-				-12
+				-15,
+				-11
 			],
 			"anim": "singLEFT",
 			"fps": 24,
@@ -25,7 +25,7 @@
 		{
 			"loop": false,
 			"offsets": [
-				-20,
+				-25,
 				-51
 			],
 			"anim": "singDOWN",
@@ -36,8 +36,8 @@
 		{
 			"loop": false,
 			"offsets": [
-				-43,
-				10
+				-65,
+				11
 			],
 			"anim": "singUP",
 			"fps": 24,
@@ -47,17 +47,83 @@
 		{
 			"loop": false,
 			"offsets": [
-				-46,
+				-64,
 				-4
 			],
 			"anim": "singRIGHT",
 			"fps": 24,
 			"name": "BF NOTE RIGHT0",
 			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [
+				0,
+				-12
+			],
+			"anim": "singLEFTmiss",
+			"fps": 24,
+			"name": "miss left0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [
+				-60,
+				-5
+			],
+			"anim": "singRIGHTmiss",
+			"fps": 24,
+			"name": "miss right0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [
+				-15,
+				-53
+			],
+			"anim": "singDOWNmiss",
+			"fps": 24,
+			"name": "miss down0",
+			"indices": []
+		},
+		{
+			"loop": false,
+			"offsets": [
+				-62,
+				12
+			],
+			"anim": "singUPmiss",
+			"fps": 24,
+			"name": "miss up0",
+			"indices": []
+		},
+		{
+			"loop": true,
+			"offsets": [
+				-16,
+				-20
+			],
+			"anim": "neck",
+			"fps": 24,
+			"name": "BF neck snap0",
+			"indices": []
+		},
+		{
+			"offsets": [
+				-13,
+				-4
+			],
+			"indices": [],
+			"fps": 24,
+			"anim": "hey",
+			"loop": false,
+			"name": "BF HEY!!0"
 		}
 	],
 	"no_antialiasing": false,
-	"image": "characters/BOYFRIEND",
+	"image": "characters/BILLFRIEND",
 	"position": [
 		0,
 		350

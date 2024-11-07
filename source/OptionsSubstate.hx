@@ -1,6 +1,5 @@
 package;
 
-import flixel.text.FlxText;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.util.FlxColor;
@@ -26,13 +25,12 @@ class OptionsSubstate extends MusicBeatSubstate
     var settings:Array<Array<String>> = [];
 
     var settingsOg:Array<Array<String>> = [
-        ["Downscroll: ", "downscroll"],
         ["Random Mode: ", "random"],
     ];
 
     var maxSelected:Int;
 
-    var descText:FlxText;
+    var descText:FlxHillText;
     public function new() 
     {
         DiscordClient.changePresence("In options menu");
@@ -58,6 +56,12 @@ class OptionsSubstate extends MusicBeatSubstate
             maxSelected++;
         }
 
+        maxSelected++;
+        settings.push(["Downscroll: ", "downscroll"]);
+
+        maxSelected++;
+        settings.push(["Antialiasing: ", "antialiasing"]);
+                
         for (i in settingsOg)
         {
             if (Reflect.field(FlxG.save.data, i[1] + "Unlocked") == true)
@@ -73,6 +77,9 @@ class OptionsSubstate extends MusicBeatSubstate
             }
         }
 
+        maxSelected++;
+        settings.push(["FPS Limit: ", "fps"]);
+
         super();
 
         var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
@@ -86,27 +93,27 @@ class OptionsSubstate extends MusicBeatSubstate
         prompt.screenCenter();
         add(prompt);
 
-        var cancel = new HillButton(null, "CLOSE", 40, 80, 15);
+        var cancel = new HillButton(null, "CANCEL", 48, 60, 5);
         cancel.x = prompt.x + prompt.width / 2 + 80;
-        cancel.scale.scale(1.5);
+        cancel.scaleButton(1.5);
         cancel.y = prompt.y + prompt.height / 1.5 + 60;
         cancel.clickPress = close;
         add(cancel);
 
-        var titleText = new FlxText();
-        titleText.setFormat(Paths.font("vcr.ttf"), 64);
-        titleText.text = "SETTINGS";
+        var titleText = new FlxHillText();
+        titleText.text = "OPTIONS";
         titleText.setPosition(240, 120);
         titleText.y -= titleText.height / 2;
         add(titleText);
 
-        descText = new FlxText(240, 180);
-        descText.setFormat(Paths.font("vcr.ttf"), 36); 
+        descText = new FlxHillText();
+        descText.size = 48;
         add(descText);
 
         changeSelection();
     }
     
+    var holdTime:Float = 0;
     override function update(elapsed:Float) 
     {
         super.update(elapsed);
@@ -125,16 +132,72 @@ class OptionsSubstate extends MusicBeatSubstate
             {
                 changeKey(FlxG.keys.justPressed.LEFT ? -1 : 1);
             }
+            else if (settings[curSelected - 4][1] == "fps")
+            {
+                changeFPS(FlxG.keys.justPressed.LEFT ? -1 : 1);
+            }
             else 
             {
                 changeOption();
             }
         }
+        else if (FlxG.keys.pressed.LEFT || FlxG.keys.pressed.RIGHT)
+        {
+            var pressed = (FlxG.keys.justPressed.LEFT || FlxG.keys.justPressed.RIGHT);
+            if (holdTime > 0.5 || pressed)
+            {
+                changeFPS((FlxG.keys.pressed.LEFT || FlxG.keys.justPressed.LEFT) ? -1 : 1);
+            }
+
+            holdTime += elapsed;
+        }
+        else if (FlxG.keys.released.LEFT || FlxG.keys.released.RIGHT)
+        {
+            holdTime = 0;
+        }
+    }
+
+    override function close()
+    {
+        FlxSprite.defaultAntialiasing = FlxG.save.data.antialiasing;
+        super.close();
+    }
+
+    function changeFPS(value:Int)
+    {
+        if (settings[curSelected - 4] == null || settings[curSelected - 4][1] != "fps")
+            return;
+
+        if (FlxG.save.data.fps < 60)
+        {
+            FlxG.save.data.fps = 60;
+            FlxG.save.flush();
+        }
+        else if (FlxG.save.data.fps > 450)
+        {
+            FlxG.save.data.fps = 450;
+            FlxG.save.flush();
+        }
+
+        FlxG.drawFramerate = FlxG.updateFramerate = FlxG.save.data.fps;
+        updateTexts();
+
+        if (FlxG.save.data.fps + value < 60)
+            return;
+        else if (FlxG.save.data.fps + value > 450)
+            return;
+
+        FlxG.save.data.fps += value;
+        FlxG.save.flush();
+
+        FlxG.drawFramerate = FlxG.updateFramerate = FlxG.save.data.fps;
+        
+        updateTexts();
     }
 
     function changeOption()
     {
-        if (maxSelected < 5)
+        if (settings[curSelected - 4] == null)
             return;
 
         var curOption:Bool = Reflect.field(FlxG.save.data, settings[curSelected - 4][1]);
@@ -196,10 +259,24 @@ class OptionsSubstate extends MusicBeatSubstate
             var on:Bool = Reflect.field(FlxG.save.data, i[1]);
 
             var text = "\n" + i[0] + (on ? "ON" : "OFF");
-            if (index == curSelected)
-                descText.text += text + " <";
-            else 
-                descText.text += text;
+            if (settings[settings.indexOf(i)][1] == "fps")
+            {
+                descText.text += "\n" + i[0];
+
+                if (index == curSelected)
+                    descText.text += "< " + FlxG.save.data.fps + " > FPS";
+                else
+                    descText.text += FlxG.save.data.fps + " FPS";
+            }
+            else
+            {
+                if (index == curSelected)
+                    descText.text += text + " <";
+                else 
+                    descText.text += text;
+            }
         }
+
+        descText.setPosition(200, 120);
     }
 }

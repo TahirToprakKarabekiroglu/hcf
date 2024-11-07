@@ -1,6 +1,7 @@
 package;
 
-import flixel.text.FlxText;
+import flixel.group.FlxSpriteGroup;
+import flixel.math.FlxMath;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.tweens.*;
@@ -11,11 +12,13 @@ class MenuState extends MusicBeatState
     var playButton:HillButton;
     var creditsButton:HillButton;
 
-    var coinText:FlxText;
+    var coinText:FlxHillText;
+    var coinTween:FlxTween;
 
     var stages:Array<FlxSprite> = [];
+    var stageGroup:FlxSpriteGroup = new FlxSpriteGroup();
     var lockedStages:Array<FlxSprite> = [];
-    var currentIndex:Int = 0;
+    static var currentIndex:Int = 0;
     var centerX:Float;
 
     var stageNames = [
@@ -32,7 +35,7 @@ class MenuState extends MusicBeatState
         75000
     ];
 
-    var stageText:Array<FlxText> = [];
+    var stageText:Array<FlxHillText> = [];
 
     var stageDescs:Array<String> = [
         "",
@@ -46,12 +49,15 @@ class MenuState extends MusicBeatState
     var initialStageX:Array<Float> = [];
     var maxDragDistance:Float = 200;
 
+    var soundButton:SoundButton;
+    var musicButton:SoundButton;
+
     override function create()
     {
         DiscordClient.changePresence("In the main menu", null);
 
-        if (FlxG.sound.music != null && !FlxG.sound.music.playing)
-            FlxG.sound.playMusic(Paths.music("theme"));
+        if (SoundButton.musicEnabled && FlxG.sound.music != null && !FlxG.sound.music.playing)
+            FlxG.sound.playMusic(Paths.music("bgmusic00"));
 
         var bg:FlxSprite = new FlxSprite();
         bg.loadGraphic(Paths.image("bg"));
@@ -67,35 +73,38 @@ class MenuState extends MusicBeatState
         coin.y = 30;
         add(coin);
 
-        coinText = new FlxText();
-        coinText.setFormat(Paths.font("vcr.ttf"), 64);
+        coinText = new FlxHillText();
         coinText.text = Std.string(FlxG.save.data.coin);
-        coinText.x = coin.x + coin.width + 5;
-        coinText.y = 20;
+        coinText.x = coin.x + coin.width + 10;
+        coinText.y = 30;
         add(coinText);
 
-        optionsButton = new HillButton(null, "OPTIONS", 48, 60, 12.5);
+        optionsButton = new HillButton(null, "OPTIONS", 52, 40, 12.5);
+        optionsButton.scaleButton(1.25);
         optionsButton.screenCenter();
         optionsButton.clickPress = () -> {
             openSubState(new OptionsSubstate());
         }
         optionsButton.y += FlxG.height / 3 - 40;
-        optionsButton.x -= 400;
+        optionsButton.x -= 310;
         add(optionsButton);
 
-        playButton = new HillButton("right", "NEXT", 48, 80, 10);
+        playButton = new HillButton("right", "NEXT", 52, 70, 10);
+        playButton.scaleButton(1.25);
         playButton.screenCenter();
         playButton.y = optionsButton.y;
-        playButton.x += 400;
+        playButton.x += 370;
         playButton.clickPress = switchUpgrade;
         add(playButton);
 
-        creditsButton = new HillButton(null, "CREDITS", 48, 80, 10);
+        creditsButton = new HillButton(null, "CREDITS", 52, 70, 10);
+        creditsButton.scaleButton(1.25);
         creditsButton.screenCenter();
         creditsButton.clickPress = () -> {
             openSubState(new CreditsSubstate());
         }
         creditsButton.y = optionsButton.y;
+        creditsButton.x += 30;
         add(creditsButton);
 
         stages = [];
@@ -115,9 +124,9 @@ class MenuState extends MusicBeatState
             stages[i].scale.set((i == currentIndex) ? 1 : 0.5, (i == currentIndex) ? 1 : 0.5);
             stages[i].screenCenter(Y);
             add(stages[i]);
+            stageGroup.add(stages[i]);
 
-            var stageText:FlxText = new FlxText();
-            stageText.setFormat(Paths.font("vcr.ttf"), 64);
+            var stageText:FlxHillText = new FlxHillText();
             stageText.text = stageNames[i];
             stageText.visible = false;
             add(stageText);
@@ -137,6 +146,26 @@ class MenuState extends MusicBeatState
 
         updateStagePositions();
 
+        soundButton = new SoundButton();
+        soundButton.scale.scale(1.25);
+        soundButton.x = FlxG.width - soundButton.width * 2.5;
+        soundButton.y = 20;
+        add(soundButton);
+
+        musicButton = new SoundButton(true);
+        musicButton.scale.scale(1.25);
+        musicButton.x = FlxG.width - soundButton.width * 1.25;
+        musicButton.y = soundButton.y;
+        add(musicButton);
+
+        var select:FlxHillText = new FlxHillText();
+        select.text = "SELECT STAGE";
+        select.y = 30;
+        select.screenCenter(X);
+        select.x += select.width - 10;
+        select.updateHitbox();
+        add(select);
+
         super.create();
     }
 
@@ -144,13 +173,17 @@ class MenuState extends MusicBeatState
     {
         super.update(elapsed);
 
-        if (FlxG.mouse.pressed)
+        /*if (FlxG.keys.justPressed.F)
+            openSubState(new DownSubstate());*/
+
+        if (FlxG.mouse.pressed && FlxG.mouse.overlaps(stageGroup))
         {
             if (!dragging)
             {
                 dragging = true;
                 dragStartX = FlxG.mouse.screenX;
                 initialStageX = [];
+                
                 for (stage in stages)
                 {
                     initialStageX.push(stage.x);
@@ -158,36 +191,24 @@ class MenuState extends MusicBeatState
             }
             else
             {
-                var deltaX:Float = FlxG.mouse.screenX - dragStartX;
-                if (currentIndex == 0)
-                {
-                    deltaX = Math.min(Math.max(deltaX, -maxDragDistance), maxDragDistance);
-                }
-                else if (currentIndex == stageNames.length - 1)
-                {
-                    deltaX = Math.min(Math.max(deltaX, -maxDragDistance), maxDragDistance);
-                }
-
+                var deltaX:Float = Math.min(Math.max(FlxG.mouse.screenX - dragStartX, -maxDragDistance), maxDragDistance);
                 for (i in 0...stages.length)
                 {
                     stages[i].x = initialStageX[i] + deltaX;
                     stageText[i].x = stages[i].x + 256 - (stageText[i].width / 2);
                     lockedStages[i].x = stages[i].x;
 
-                    // Calculate the scale based on distance from the center
                     var distance:Float = Math.abs(stages[i].x + stages[i].width / 2 - centerX);
-                    var scale:Float = 1 - Math.min(distance / (FlxG.width * 0.5), 1) * 0.5;
-                    trace(scale);
-                    stages[i].scale.set(scale, scale);
-                    stageText[i].scale.set(scale, scale);
-                    lockedStages[i].scale.set(scale, scale);
+                    var targetScale:Float = 1 - Math.min(distance / (FlxG.width * 0.5), 1) * 0.5;
+                    stages[i].scale.set(FlxMath.lerp(stages[i].scale.x, targetScale, 0.025), FlxMath.lerp(stages[i].scale.y, targetScale, 0.025));
+                    stageText[i].scale.set(stages[i].scale.x, stages[i].scale.y);
+                    lockedStages[i].scale.set(stages[i].scale.x, stages[i].scale.y);
                 }
             }
         }
         else if (dragging)
         {
             dragging = false;
-
             var deltaX:Float = FlxG.mouse.screenX - dragStartX;
             var first:Bool = currentIndex == 0;
             var last:Bool = currentIndex == stageNames.length - 1;
@@ -212,22 +233,20 @@ class MenuState extends MusicBeatState
 
         onKeyPress(key != -1, key);
 
-        if (FlxG.keys.justPressed.ENTER && !getUnlocked(currentIndex))
+        if (FlxG.keys.justPressed.ENTER)
         {
-            openSubState(new UnlockSubstate(true, stageNames[currentIndex], stageDescs[currentIndex], unlockcost[currentIndex], "stage_unlocked_" + currentIndex, updateStagePositions));
+            switchUpgrade();
         }
 
         for (i in 0...stages.length)
         {
             var text = stageText[i];
-
             text.y = stages[i].y - stages[i].height / 2 + 30;
 
             var lockedSprite = lockedStages[i];
             lockedSprite.setPosition(stages[i].x, stages[i].y);
         }
     }
-
 
     private function onKeyPress(pressed:Bool, keyCode:Int):Void
     {
@@ -320,12 +339,44 @@ class MenuState extends MusicBeatState
     {
         if (!getUnlocked(currentIndex))
         {
-            openSubState(new UnlockSubstate(true, stageNames[currentIndex], stageDescs[currentIndex], unlockcost[currentIndex], "stage_unlocked_" + currentIndex, updateStagePositions));
+            var x:Float = switch "stage_unlocked_" + currentIndex
+            {
+                case "stage_unlocked_1": -20;
+                case "stage_unlocked_2": -15;
+                case "stage_unlocked_3": -12.5;
+                case _: 0;
+            }
+            var sub = new UnlockSubstate(true, stageNames[currentIndex], stageDescs[currentIndex], unlockcost[currentIndex], "stage_unlocked_" + currentIndex, 
+            () -> {
+                updateStagePositions();
+                coinBop();
+            }, false, null, 45);
+            sub.offsetX = x;
+            openSubState(sub);
         }
         else 
         {
             PlayState.curStage = stageNames[currentIndex];
             MusicBeatState.switchState(new UpgradeMenuState());
         }
+    }
+
+    function coinBop():Void {
+		if(coinTween != null)
+			coinTween.cancel();
+
+		coinText.scale.x = coinText.size / 64 * 1.075;
+		coinText.scale.y = coinText.size / 64 * 1.075;
+		coinTween = FlxTween.tween(coinText.scale, {x: coinText.size / 64, y: coinText.size / 64}, 0.2, {
+			onComplete: function(twn:FlxTween) {
+				coinTween = null;
+			}
+		});
+	}
+
+    override function closeSubState()
+    {
+        DiscordClient.changePresence("In the main menu", null);
+        super.closeSubState();
     }
 }

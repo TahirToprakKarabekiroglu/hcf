@@ -25,7 +25,7 @@ class FirstState extends MusicBeatState
         PlayerSettings.init();
 
         FlxG.fixedTimestep = false;
-        FlxG.save.bind('hillclimbfunkin', 'tahirtoprakkarabekiroglu');
+        FlxG.save.bind('hillclimbfunkin_v2', 'TahirToprakKarabekiroglu');
 
         PlayerSettings.player1.setKeyboardScheme(Solo);
 
@@ -39,11 +39,43 @@ class FirstState extends MusicBeatState
             FlxG.save.data.stage_unlocked_0 = true;
             FlxG.save.flush();
         }
+        if (FlxG.save.data.downscroll == null)
+        {
+            FlxG.save.data.downscroll = false;
+            FlxG.save.flush();
+        }
+        if (FlxG.save.data.fps == null)
+        {
+            FlxG.save.data.fps = 60;
+            FlxG.save.flush();
+        }
+        if (FlxG.save.data.antialiasing == null)
+        {
+            FlxG.save.data.antialiasing = true;
+            FlxG.save.flush();
+        }
+        if (FlxG.save.data.soundEnabled == null)
+        {
+            FlxG.save.data.soundEnabled = true;
+            FlxG.save.flush();
+        }
+        if (FlxG.save.data.musicEnabled == null)
+        {
+            FlxG.save.data.musicEnabled = true;
+            FlxG.save.flush();
+        }
 
+        SoundButton.soundEnabled = FlxG.save.data.soundEnabled;
+        SoundButton.musicEnabled = FlxG.save.data.musicEnabled;
+
+        FlxSprite.defaultAntialiasing = FlxG.save.data.antialiasing;
+        FlxG.drawFramerate = FlxG.updateFramerate = FlxG.save.data.fps;
+        
         if (!DiscordClient.isInitialized)
 		{
 			DiscordClient.initialize();
 			Application.current.onExit.add (function (exitCode) {
+                FlxG.save.flush();
 				DiscordClient.shutdown();
 			});
 		}
@@ -76,11 +108,11 @@ class FirstState extends MusicBeatState
     {
         super.update(elapsed);
 
-        if (started)
-            FlxG.sound.playMusic(Paths.music('theme'));
+        if (started && SoundButton.musicEnabled)
+            FlxG.sound.playMusic(Paths.music('bgmusic00'));
 
-        if (FlxG.random.bool(95))
-            progress += elapsed * FlxG.random.int(100, 800);
+        if (FlxG.random.bool(90))
+            progress += elapsed * FlxG.random.int(75, 750);
 
         if (progress > 100)
         {

@@ -1,10 +1,13 @@
 package;
 
+import openfl.media.Sound;
+import flixel.util.FlxSpriteUtil;
 import flixel.graphics.FlxGraphic;
 #if desktop
 import Discord.DiscordClient;
 #end
 import Section.SwagSection;
+import DownSubstate;
 import Song.SwagSong;
 import flixel.FlxBasic;
 import flixel.FlxCamera;
@@ -111,14 +114,15 @@ class PlayState extends MusicBeatState
 	public var songScore:Int = 0;
 	public var songHits:Int = 0;
 	public var songMisses:Int = 0;
-	public var scoreTxt:FlxText;
-	var scoreTxtTween:FlxTween;
+	var coinTween:FlxTween;
+
+	var battery:Float = 1;
+	var batteryTween:FlxTween;
 
 	private var singAnimations:Array<String> = ['singLEFT', 'singDOWN', 'singUP', 'singRIGHT'];
 
 	#if desktop
 	// Discord RPC variables
-	var storyDifficultyText:String = "";
 	var detailsText:String = "";
 	var detailsPausedText:String = "";
 	#end
@@ -132,10 +136,14 @@ class PlayState extends MusicBeatState
 
 	var precacheList:Map<String, String> = new Map<String, String>();
 
+	var initialCoin:Int = 0;
+
 	override public function create()
 	{
 		//trace('Playback Rate: ' + playbackRate);
 		Paths.clearStoredMemory();
+
+		initialCoin = Std.int(FlxG.save.data.coin + 0);
 
 		// for lua
 		instance = this;
@@ -183,7 +191,7 @@ class PlayState extends MusicBeatState
 		// String that contains the mode defined here so it isn't necessary to call changePresence for each mode
 		detailsText = "Hill Climb Funkin";
 		// String for when the game is paused
-		detailsPausedText = "Paused - " + detailsText;
+		detailsPausedText = "Paused";
 		#end
 
 		FlxG.camera.zoom = 0.4;
@@ -200,12 +208,44 @@ class PlayState extends MusicBeatState
 		boyfriend = new Boyfriend(0, 0, SONG.player1);
 		add(boyfriend);
 
+		switch curStage.toLowerCase()
+		{
+			case "countryside":
+				boyfriend.x -= 400;
+				boyfriend.y -= 450;
+			case "desert":
+				boyfriend.y -= 530;
+				boyfriend.angle -= 7;
+			case "arctic":
+				var snow:FlxEmitter = new FlxEmitter(0, 0, 200);
+				for (i in 0...200)
+				{
+					var snowflake:FlxParticle = new FlxParticle();
+					snowflake.antialiasing = false;
+					snowflake.loadGraphic(Paths.image("snowflakes/snowflake" + FlxG.random.int(1, 6)));
+					snow.add(snowflake);
+				}
+
+				snow.cameras = [camOther];
+				snow.width = FlxG.width;
+				snow.launchMode = SQUARE;
+				snow.y -= 50;
+				snow.velocity.set(-10, 80, 0, 120);
+				snow.lifespan.set(0);
+				add(snow);
+				snow.start(false, 0.05);
+
+				boyfriend.y -= 430;
+			case "moon":
+				boyfriend.y -= 475;
+		}
+
 		var camPos:FlxPoint = new FlxPoint(0, 0);
 
 		Conductor.songPosition = -5000 / Conductor.songPosition;
 
 		strumLine = new FlxSprite(STRUM_X_MIDDLESCROLL, 50).makeGraphic(FlxG.width, 10);
-		if(FlxG.save.data.downscroll) strumLine.y = FlxG.height - 150;
+		if(FlxG.save.data.downscroll) strumLine.y = FlxG.height - 100;
 		strumLine.scrollFactor.set();
 
 		strumLineNotes = new FlxTypedGroup<StrumNote>();
@@ -219,6 +259,47 @@ class PlayState extends MusicBeatState
 
 		// After all characters being loaded, it makes then invisible 0.01s later so that the player won't freeze when you change characters
 		// add(strumLine);
+		
+		var heart = new FlxSprite().loadGraphic(Paths.image("health"));
+		heart.x = 10;
+		heart.y = 10;
+		add(heart);
+
+		healthBar = new FlxBar(heart.x * 2 + 60, heart.y + 15, LEFT_TO_RIGHT, 150, 40, this, "health", 0, 2);
+		healthBar.createGradientBar([FlxColor.TRANSPARENT], [FlxColor.RED, FlxColor.fromRGB(225, 0, 0), FlxColor.RED], 1, 90);
+		add(healthBar);
+
+		var borderh:FlxSprite = new FlxSprite().makeGraphic(Std.int(healthBar.width), Std.int(healthBar.height), FlxColor.TRANSPARENT);
+		borderh.setPosition(healthBar.x, healthBar.y);
+		FlxSpriteUtil.drawRect(borderh, 0, 0, borderh.width, borderh.height, FlxColor.TRANSPARENT, {thickness: 5, color: FlxColor.BLACK});
+		add(borderh);
+
+		var battery = new FlxSprite().loadGraphic(Paths.image("batteryicon"));
+		battery.x = 10;
+		battery.y = 75;
+
+		batteryBar = new FlxBar(battery.x * 2 + 60, battery.y + 15, LEFT_TO_RIGHT, 150, 40, this, "battery", 0, 1);
+		batteryBar.createGradientBar([FlxColor.TRANSPARENT], [FlxColor.GREEN, FlxColor.fromRGB(0, 225, 0), FlxColor.GREEN], 1, 90);
+		add(battery);
+
+		var border:FlxSprite = new FlxSprite().makeGraphic(Std.int(batteryBar.width), Std.int(batteryBar.height), FlxColor.TRANSPARENT);
+		border.setPosition(batteryBar.x, batteryBar.y);
+		FlxSpriteUtil.drawRect(border, 0, 0, border.width, border.height, FlxColor.TRANSPARENT, {thickness: 5, color: FlxColor.BLACK});
+
+		add(batteryBar);
+		add(border);
+
+		var coin = new FlxSprite();
+		coin.loadGraphic(Paths.image("coin"));
+		coin.x = battery.x;
+		coin.y = battery.y + battery.height + 5;
+		add(coin);
+
+		coinText = new FlxHillText();
+		coinText.size = 48;
+		coinText.y = coin.y + 10;
+		coinText.x = coin.x + coin.width / 2 + 20;
+		add(coinText);
 
 		camFollow = new FlxPoint();
 		camFollowPos = new FlxObject(0, 0, 1, 1);
@@ -245,15 +326,16 @@ class PlayState extends MusicBeatState
 		FlxG.fixedTimestep = false;
 		moveCameraSection();
 
-		scoreTxt = new FlxText(0, 20, FlxG.width, "", 20);
-		scoreTxt.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		scoreTxt.scrollFactor.set();
-		scoreTxt.borderSize = 1.25;
-		add(scoreTxt);
-
 		strumLineNotes.cameras = [camHUD];
 		notes.cameras = [camHUD];
-		scoreTxt.cameras = [camHUD];
+		battery.cameras = [camHUD];
+		border.cameras = [camHUD];
+		batteryBar.cameras = [camHUD];
+		healthBar.cameras = [camHUD];
+		borderh.cameras = [camHUD];
+		heart.cameras = [camHUD];
+		coin.cameras = [camHUD];
+		coinText.cameras = [camHUD];
 
 		// if (SONG.song == 'South')
 		// FlxG.camera.alpha = 0.7;
@@ -269,19 +351,45 @@ class PlayState extends MusicBeatState
 		eventPushedMap = null;
 
 		startCountdown();
+
+		var pauseButton:PauseButton = new PauseButton();
+		pauseButton.scale.scale(1.25);
+		pauseButton.cameras = [camOther];
+		pauseButton.thiscamera = camOther;
+		pauseButton.y = 20;
+		pauseButton.x = FlxG.width - pauseButton.width - 20;
+		pauseButton.pause = openPauseMenu;
+		pauseButton.scrollFactor.set();
+		add(pauseButton);
+
+		batteryLow = new FlxSprite();
+		batteryLow.loadGraphic(Paths.image("fuel-warning"));
+		batteryLow.cameras = [camHUD];
+		batteryLow.screenCenter();
+		batteryLow.y += batteryLow.height / 2;
+		batteryLow.alpha = 0;
+		add(batteryLow);
+
+		lowSound = new FlxSound().loadEmbedded(Paths.sound("beep"), true);
 	
 		#if desktop
 		// Updating Discord Rich Presence.
-		DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")");
+		DiscordClient.changePresence(detailsText, curStage.toUpperCase());
 		#end
 
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyRelease);
 
 		super.create();
+		CustomFadeTransition.nextCamera = camOther;
 
 		Paths.clearUnusedMemory();
 	}
+
+	var batteryLow:FlxSprite;
+	var batteryBar:FlxBar;
+	var healthBar:FlxBar;
+	var coinText:FlxHillText;
 
 	/*function set_SONG.speed(value:Float):Float
 	{
@@ -316,6 +424,8 @@ class PlayState extends MusicBeatState
 	var lastReportedPlayheadPosition:Int = 0;
 	var songTime:Float = 0;
 
+	var elapsedVal:Float;
+
 	function startSong():Void
 	{
 		startingSong = false;
@@ -327,6 +437,8 @@ class PlayState extends MusicBeatState
 		FlxG.sound.music.onComplete = finishSong.bind();
 		vocals.play();
 
+		battery = 1;
+		cancelBatteryTween();
 		startOnTime = 0;
 
 		if(paused) {
@@ -337,13 +449,14 @@ class PlayState extends MusicBeatState
 
 		#if desktop
 		// Updating Discord Rich Presence (with Time Left)
-		DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")", null, true, FlxG.sound.music.length);
+		DiscordClient.changePresence(detailsText, curStage.toUpperCase(), null, true, FlxG.sound.music.length);
 		#end
 	}
 
 	var debugNum:Int = 0;
 	private var noteTypeMap:Map<String, Bool> = new Map<String, Bool>();
 	private var eventPushedMap:Map<String, Bool> = new Map<String, Bool>();
+	var randomizedData:Int = -1;
 	private function generateSong(dataPath:String):Void
 	{
 		var songData = SONG;
@@ -392,13 +505,19 @@ class PlayState extends MusicBeatState
 					oldNote = null;
 
 				var coinVal:Int = 5;
-				var extra:Int = Std.int(FlxG.save.data.coinUpLevel - 1);
+				var extra:Float = Std.int(FlxG.save.data.coinUpLevel - 1);
 				if (FlxG.random.bool(5 + extra))
 					coinVal = 500;
 				else if (FlxG.random.bool(10 + extra))
 					coinVal = 100;
 				else if (FlxG.random.bool(40 + extra))
 					coinVal = 25;
+
+				if (FlxG.save.data.random)
+				{
+					daNoteData = FlxG.random.int(0, 3, [randomizedData]);
+					randomizedData = daNoteData % 4;
+				}
 
 				var swagNote:Note = new Note(daStrumTime, daNoteData, coinVal, oldNote);
 				swagNote.sustainLength = songNotes[2];
@@ -412,7 +531,7 @@ class PlayState extends MusicBeatState
 				susLength = susLength / Conductor.stepCrochet;
 				unspawnNotes.push(swagNote);
 
-				var floorSus:Int = Math.floor(susLength);
+				var floorSus:Int = Math.round(susLength);
 				if(floorSus > 0) {
 					for (susNote in 0...floorSus+1)
 					{
@@ -428,7 +547,7 @@ class PlayState extends MusicBeatState
 					}
 				}
 
-				swagNote.x += FlxG.width / 2; // general offset
+				//swagNote.x += FlxG.width / 2; // general offset
 
 				if(!noteTypeMap.exists(swagNote.noteType)) {
 					noteTypeMap.set(swagNote.noteType, true);
@@ -489,6 +608,8 @@ class PlayState extends MusicBeatState
 				vocals.pause();
 			}
 
+			lowSound.pause();
+
 			if (startTimer != null && !startTimer.finished)
 				startTimer.active = false;
 			if (finishTimer != null && !finishTimer.finished)
@@ -531,11 +652,11 @@ class PlayState extends MusicBeatState
 			#if desktop
 			if (startTimer != null && startTimer.finished)
 			{
-				DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")", null, true, FlxG.sound.music.length - Conductor.songPosition);
+				DiscordClient.changePresence(detailsText, curStage.toUpperCase(), null, true, FlxG.sound.music.length - Conductor.songPosition);
 			}
 			else
 			{
-				DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")", null);
+				DiscordClient.changePresence(detailsText, curStage.toUpperCase(), null);
 			}
 			#end
 		}
@@ -550,11 +671,11 @@ class PlayState extends MusicBeatState
 		{
 			if (Conductor.songPosition > 0.0)
 			{
-				DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")", null, true, FlxG.sound.music.length - Conductor.songPosition);
+				DiscordClient.changePresence(detailsText, curStage.toUpperCase(), null, true, FlxG.sound.music.length - Conductor.songPosition);
 			}
 			else
 			{
-				DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")");
+				DiscordClient.changePresence(detailsText, curStage.toUpperCase());
 			}
 		}
 		#end
@@ -567,7 +688,7 @@ class PlayState extends MusicBeatState
 		#if desktop
 		if (health > 0 && !paused)
 		{
-			DiscordClient.changePresence(detailsPausedText, SONG.song + " (" + storyDifficultyText + ")");
+			DiscordClient.changePresence(detailsPausedText, curStage.toUpperCase());
 		}
 		#end
 
@@ -595,16 +716,75 @@ class PlayState extends MusicBeatState
 	var canPause:Bool = true;
 	var limoSpeed:Float = 0;
 
+	var isLow:Bool = false;
+	var lowSound:FlxSound;
+	var lowSine:Float;
+
 	override public function update(elapsed:Float)
 	{
 		var lerpVal:Float = 1;
 		camFollowPos.setPosition(FlxMath.lerp(camFollowPos.x, camFollow.x, lerpVal), FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal));
+
+		coinText.text = "" + FlxG.save.data.coin;
+		coinText.x = 67.5;
+
+		ratingPercent = Std.int(Math.abs(totalNotesHit / totalPlayed * 100));
+		if (ratingPercent > 100)
+			ratingPercent = 100;
+		if (ratingPercent < 0)
+			ratingPercent = 0;
+
+		if (curStage.toLowerCase() == "moon")
+		{
+			boyfriend.y += Math.sin(elapsedVal) / 5;
+			camHUD.y += Math.sin(elapsedVal) / 10;
+
+			elapsedVal += elapsed * 2;
+		}
 
 		super.update(elapsed);
 
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
 			openPauseMenu();
+		}
+
+		if (battery <= 0)
+		{
+			camHUD.zoom += elapsed * 8;
+			camHUD.alpha -= elapsed * 2;
+			if (camHUD.zoom > 8)
+			{
+				openDeadMenu(OUT_OF_BATTERY);
+			}
+		}
+		else if (health <= 0)
+		{
+			camHUD.zoom += elapsed * 8;
+			camHUD.alpha -= elapsed * 2;
+			if (camHUD.zoom > 8)
+			{
+				openDeadMenu(DIED);
+			}
+		}
+
+		if (health > 2)
+			health = 2;
+
+		isLow = battery < 0.25 && battery > 0;
+		if (isLow)
+		{
+			if (!lowSound.playing && !paused)
+				lowSound.play();
+
+			lowSine += 360 * elapsed;
+			batteryLow.alpha = 1 - Math.sin((Math.PI * lowSine) / 360);
+		}
+		else
+		{
+			batteryLow.alpha = 0;
+			if (lowSound.playing && !paused)
+				lowSound.stop();
 		}
 
 		// FlxG.watch.addQuick('VOL', vocals.amplitudeLeft);
@@ -713,7 +893,7 @@ class PlayState extends MusicBeatState
 						daNote.alpha = strumAlpha;
 
 					if(daNote.copyX)
-						daNote.x = strumX + Math.cos(angleDir) * daNote.distance;
+						daNote.x = strumX;
 
 					if(daNote.copyY)
 					{
@@ -776,6 +956,19 @@ class PlayState extends MusicBeatState
 						daNote.destroy();
 					}
 				});
+				
+				if (battery <= 0)
+				{
+					notes.forEachAlive(function(note:Note)
+					{
+						note.copyAlpha = true;
+						for (i in playerStrums)
+							i.alpha = 0.4;
+						note.canBeHit = false;
+						note.earlyHitMult = 0;
+						note.blockHit = true;
+					});
+				}
 			}
 			else
 			{
@@ -806,12 +999,39 @@ class PlayState extends MusicBeatState
 			FlxG.sound.music.pause();
 			vocals.pause();
 		}
-		openSubState(new PauseSubState());
+		openSubState(new PauseSubState(camOther));
 		//}
 
 		#if desktop
-		DiscordClient.changePresence(detailsPausedText, SONG.song + " (" + storyDifficultyText + ")");
+		DiscordClient.changePresence(detailsPausedText, curStage.toUpperCase());
 		#end
+	}
+
+	function openDeadMenu(down:DownType)
+	{
+		persistentUpdate = false;
+		persistentDraw = true;
+		paused = true;
+
+		if (vocals != null) 
+		{
+			vocals.pause();
+		}
+		if (FlxG.sound.music != null)
+		{
+			FlxG.sound.music.pause();
+		}
+
+		var onClick = () -> {
+			trace('WENT BACK TO FREEPLAY??');
+			cancelMusicFadeTween();
+			CustomFadeTransition.nextCamera = camOther;
+			MusicBeatState.switchState(new UpgradeMenuState());
+			if (SoundButton.musicEnabled)
+				FlxG.sound.playMusic(Paths.music('bgmusic00'));
+			transitioning = true;
+		}
+		openSubState(new DownSubstate(down, down == SUCCESS ? FlxG.sound.music.length : FlxG.sound.music.time, Std.int(FlxG.save.data.coin - initialCoin), notesHit, FlxMath.roundDecimal(songScore / 1000, 1), songMisses, ratingPercent, onClick, endingSong));
 	}
 
 	public function getControl(key:String) {
@@ -825,7 +1045,7 @@ class PlayState extends MusicBeatState
 
 		if (!SONG.notes[curSection].mustHitSection)
 		{
-			moveCamera(true);
+			//moveCamera(true);
 		}
 	}
 
@@ -864,29 +1084,11 @@ class PlayState extends MusicBeatState
 	public var transitioning = false;
 	public function endSong():Void
 	{
-		//Should kill you if you tried to cheat
-		if(!startingSong) {
-			notes.forEach(function(daNote:Note) {
-				if(daNote.strumTime < FlxG.sound.music.length) {
-					health -= 0.05;
-				}
-			});
-			for (daNote in unspawnNotes) {
-				if(daNote.strumTime < FlxG.sound.music.length) {
-					health -= 0.05;
-				}
-			}
-		}
-
 		canPause = false;
 		endingSong = true;
 
 		if(!transitioning) {
-			trace('WENT BACK TO FREEPLAY??');
-			cancelMusicFadeTween();
-			MusicBeatState.switchState(new UpgradeMenuState());
-			FlxG.sound.playMusic(Paths.music('theme'));
-			transitioning = true;
+			openDeadMenu(SUCCESS);
 		}
 	}
 
@@ -905,6 +1107,8 @@ class PlayState extends MusicBeatState
 
 	public var totalPlayed:Int = 0;
 	public var totalNotesHit:Float = 0.0;
+	public var notesHit:Int = 0;
+	public var ratingPercent:Int = 0;
 
 	public var showCombo:Bool = false;
 	public var showComboNum:Bool = true;
@@ -959,12 +1163,16 @@ class PlayState extends MusicBeatState
 						// eee jack detection before was not super good
 						if (!notesStopped) {
 							var chance:Float = FlxG.save.data.inputLevel - 1;
-							chance = chance / 2;
+							chance = chance / 2.5;
 
-							if (!FlxG.random.bool(5 - chance))
+							if (!FlxG.random.bool(4 - chance) || epicNote.noteType == "Battery")
 							{
 								goodNoteHit(epicNote);
 								pressNotes.push(epicNote);
+							}
+							else
+							{
+								epicNote.alpha = 0.4;
 							}
 						}
 
@@ -1047,7 +1255,7 @@ class PlayState extends MusicBeatState
 				}
 			});
 
-			if (boyfriend.animation.curAnim != null && boyfriend.holdTimer > Conductor.stepCrochet * (0.0011 / FlxG.sound.music.pitch) * boyfriend.singDuration && boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
+			if (boyfriend.animation.curAnim != null && boyfriend.holdTimer > Conductor.stepCrochet * 0.0011 * boyfriend.singDuration && boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
 			{
 				boyfriend.dance();
 				//boyfriend.animation.curAnim.finish();
@@ -1065,7 +1273,11 @@ class PlayState extends MusicBeatState
 		return ret;
 	}
 
-	function noteMiss(daNote:Note):Void { //You didn't hit the key and let it go offscreen, also used by Hurt Notes
+	function noteMiss(daNote:Note):Void 
+	{
+		if (battery <= 0)
+			return;
+
 		//Dupe note remove
 		notes.forEachAlive(function(note:Note) {
 			if (daNote != note && daNote.noteData == note.noteData && daNote.isSustainNote == note.isSustainNote && Math.abs(daNote.strumTime - note.strumTime) < 1) {
@@ -1075,7 +1287,7 @@ class PlayState extends MusicBeatState
 			}
 		});
 		combo = 0;
-		health -= daNote.missHealth;
+		health -= 0.04;
 
 		//For testing purposes
 		//trace(daNote.missHealth);
@@ -1096,12 +1308,14 @@ class PlayState extends MusicBeatState
 	{
 		if (!note.wasGoodHit)
 		{
-			if((note.ignoreNote || note.hitCausesMiss)) return;
+			if((note.hitCausesMiss)) return;
 
 			if (!note.isSustainNote)
 			{
-				FlxG.sound.play(Paths.sound("coin"));
-				songScore += note.coinVal;
+				if (SoundButton.soundEnabled)
+					FlxG.sound.play(Paths.sound("coin"));
+
+				FlxG.save.data.coin += note.coinVal;
 			}
 
 			if(note.hitCausesMiss) {
@@ -1128,7 +1342,7 @@ class PlayState extends MusicBeatState
 				return;
 			}
 
-			health += note.hitHealth;
+			health += 0.02;
 
 			if(!note.noAnimation) {
 				var animToPlay:String = singAnimations[Std.int(Math.abs(note.noteData))];
@@ -1144,7 +1358,44 @@ class PlayState extends MusicBeatState
 				}
 			}
 
-			
+			if (note.noteType == "Battery")
+			{
+				battery = 1;
+				cancelBatteryTween();
+				if (SoundButton.soundEnabled)
+					FlxG.sound.play(Paths.sound("refuel"));
+			}
+			else
+			{
+				notesHit++;
+				if (!note.isSustainNote)
+				{
+					totalPlayed++;
+
+					var diff = Math.abs(note.strumTime - Conductor.songPosition);
+					if (diff <= 45)
+					{
+						totalNotesHit++;
+						songScore += 350;
+					}
+					else if (diff <= 90)
+					{
+						totalNotesHit += 0.75;
+						songScore += 200;
+					}
+					else if (diff <= 135)
+					{
+						totalNotesHit += 0.5;
+						songScore += 100;
+					}
+					else
+					{
+						totalNotesHit += 0.25;
+						songScore += 50;
+					}
+				}
+			}
+
 			var spr = playerStrums.members[note.noteData];
 			if(spr != null)
 			{
@@ -1163,6 +1414,8 @@ class PlayState extends MusicBeatState
 				note.kill();
 				notes.remove(note, true);
 				note.destroy();
+
+				coinBop();
 			}
 		}
 	}
@@ -1173,7 +1426,7 @@ class PlayState extends MusicBeatState
 		
 		FlxG.sound.music.pitch = 1;
 
-		FlxG.save.data.coin += songScore; 
+		//FlxG.save.data.coin += songScore; 
 		FlxG.save.flush();
 		
 		super.destroy();
@@ -1260,5 +1513,27 @@ class PlayState extends MusicBeatState
 			spr.playAnim('confirm', true);
 			spr.resetAnim = time;
 		}
+	}
+
+	public function coinBop():Void {
+		if(coinTween != null)
+			coinTween.cancel();
+
+		coinText.scale.x = coinText.size / 64 * 1.075;
+		coinText.scale.y = coinText.size / 64 * 1.075;
+		coinTween = FlxTween.tween(coinText.scale, {x: coinText.size / 64, y: coinText.size / 64}, 0.2, {
+			onComplete: function(twn:FlxTween) {
+				coinTween = null;
+			}
+		});
+	}
+
+	function cancelBatteryTween()
+	{
+		if (batteryTween != null)
+			batteryTween.cancel();
+
+		var duration = 17.5 + ((FlxG.save.data.batteryLevel - 1) * 7.5);
+		batteryTween = FlxTween.tween(this, {battery: .0}, duration);
 	}
 }

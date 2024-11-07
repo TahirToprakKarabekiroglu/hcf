@@ -2,7 +2,7 @@
 <project>
 	<!-- _________________________ Application Settings _________________________ -->
 
-	<app title="Hill Climb Funkin" file="Hill Climb Funkin" packageName="com.tahirk.786" package="com.tahirk.786" main="Main" version="0.2.8" company="Tahir Toprak K." />
+	<app title="Hill Climb Funkin" file="Hill Climb Funkin" packageName="hill.climb.funkin" package="hill.climb.funkin" main="Main" version="1.8.1" company="TahirToprakKarabekiroglu" />
 
 	<!--Switch Export with Unique ApplicationID and Icon-->
 	<set name="APP_ID" value="0x0100f6c013bbc000" />
@@ -66,11 +66,7 @@
 	<assets path="assets/videos"        library="videos"        if="VIDEOS_ALLOWED"/>
 	<assets path="assets/songs"         library="songs"         exclude="*.ogg" if="web"/>
 	<assets path="assets/songs"         library="songs"         exclude="*.mp3" unless="web"/>
-	
-	<section if="MODS_ALLOWED">
-		<assets path='example_mods' rename='mods' embed='false'/>
-	</section>
-	<assets path='art/readme.txt' rename='do NOT readme.txt' />
+
 	<!-- <template path='mods' /> -->
 	
 	<!-- assets path="CHANGELOG.md" rename='changelog.txt' -->

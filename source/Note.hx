@@ -76,7 +76,7 @@ class Note extends FlxSprite
 	public var copyX:Bool = true;
 	public var copyY:Bool = true;
 	public var copyAngle:Bool = true;
-	public var copyAlpha:Bool = true;
+	public var copyAlpha:Bool = false;
 
 	public var hitHealth:Float = 0.023;
 	public var missHealth:Float = 0.0475;
@@ -138,6 +138,11 @@ class Note extends FlxSprite
 					noMissAnimation = true;
 				case 'GF Sing':
 					gfNote = true;
+				case 'Battery':
+					ignoreNote = true;
+					noAnimation = true;
+					reloadNote('', 'BATTERY_assets');
+					earlyHitMult = 0.5;
 			}
 			noteType = value;
 		}
@@ -168,7 +173,10 @@ class Note extends FlxSprite
 
 			x += swagWidth * (noteData);
 			if(!isSustainNote && noteData > -1 && noteData < 4) { //Doing this 'if' check to fix the warnings on Senpai songs
-				animation.play('coin${coinVal}');
+				if (noteType != "Battery")
+					animation.play('coin${coinVal}');
+				else
+					animation.play('battery');
 			}
 		}
 
@@ -180,7 +188,7 @@ class Note extends FlxSprite
 		if (isSustainNote && prevNote != null)
 		{
 			hitsoundDisabled = true;
-			//if(ClientPrefs.downScroll) flipY = true;
+			if(FlxG.save.data.downscroll) flipY = true;
 
 			offsetX += width / 2;
 			copyAngle = false;
@@ -204,9 +212,17 @@ class Note extends FlxSprite
 			}
 
 		} else if(!isSustainNote) {
-			earlyHitMult += (FlxG.save.data.coinUpLevel - 1) / 10;
+			earlyHitMult += (FlxG.save.data.inputLevel - 1) / 17.5;
+
 		}
-		x += offsetX;
+		offsetX = -35;
+		if (isSustainNote)
+			offsetX = 5;
+		if (FlxG.save.data.downscroll)
+		{
+			if (isSustainNote)
+				offsetY = -10;
+		}
 	}
 
 	var lastNoteScaleToo:Float = 1;
@@ -249,7 +265,10 @@ class Note extends FlxSprite
 	}
 
 	function loadNoteAnims() {
-		animation.addByPrefix('coin${coinVal}', 'coin${coinVal}_');
+		if (noteType != "Battery")
+			animation.addByPrefix('coin${coinVal}', 'coin${coinVal}_');
+		else
+			animation.addByPrefix('battery', 'battery0');
 
 		if (isSustainNote)
 		{

@@ -13,8 +13,8 @@ class ExitSubstate extends MusicBeatSubstate
     var prompt:FlxSprite;
     var cancel:HillButton;
     var exitText:HillButton;
-    var titleText:FlxText;
-    var descText:FlxText;
+    var titleText:FlxHillText;
+    var descText:FlxHillText;
 
     public function new(exit:Bool = true, func:Void -> Void, state:PauseSubState) 
     {
@@ -38,15 +38,15 @@ class ExitSubstate extends MusicBeatSubstate
         prompt.screenCenter();
         add(prompt);
 
-        cancel = new HillButton(null, "CANCEL", 40, 80, 15);
+        cancel = new HillButton(null, "CANCEL", 48, 60, 5);
         cancel.x = prompt.x + prompt.width / 2 + 80;
-        cancel.scale.scale(1.5);
+        cancel.scaleButton(1.5);
         cancel.y = prompt.y + prompt.height / 1.5 + 60;
         cancel.clickPress = close;
         add(cancel);
 
-        exitText = new HillButton(null, exit ? "EXIT_" : "RESTART", 40, 100, 15); 
-        exitText.scale.scale(1.5);
+        exitText = new HillButton(null, exit ? "EXIT_" : "RESTART_", 48, exit ? 100 : 60, 5); 
+        exitText.scaleButton(1.5);
         exitText.x = cancel.x - cancel.width * 2 + 95;
         exitText.y = cancel.y;
         exitText.clickPress = () -> {
@@ -55,17 +55,19 @@ class ExitSubstate extends MusicBeatSubstate
         }
         add(exitText);
 
-        titleText = new FlxText();
-        titleText.setFormat(Paths.font("vcr.ttf"), 64);
+        titleText = new FlxHillText();
         titleText.text = (exit ? "EXIT" : "RESTART") + "?";
-        titleText.setPosition(240, 120);
+        titleText.setPosition(230, 120);
         titleText.y -= titleText.height / 2;
         add(titleText);
 
-        descText = new FlxText(240, 180);
-        descText.setFormat(Paths.font("vcr.ttf"), 40); 
+        descText = new FlxHillText(75, 160);
+        descText.size = 45;
         descText.text = description;
         add(descText);
+
+        if (exit)
+            descText.x += 15;
     }    
 
     override function close()

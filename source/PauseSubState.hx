@@ -1,5 +1,6 @@
 package;
 
+import flixel.FlxCamera;
 import flixel.util.FlxColor;
 import flixel.FlxSprite;
 import flixel.FlxG;
@@ -8,7 +9,7 @@ class PauseSubState extends MusicBeatSubstate
 {
 	var pressed:Bool = false;
 
-	public function new()
+	public function new(cam:FlxCamera)
 	{
 		super();
 
@@ -30,9 +31,9 @@ class PauseSubState extends MusicBeatSubstate
 
 		var buttons = [];
 
-		var restart:HillButton = new HillButton(null, "RESTART", 48, 80, 10);
-		restart.scale.scale(1.25);
+		var restart:HillButton = new HillButton(null, "RESTART", 52, 80, 10);
 		restart.screenCenter();
+		restart.scaleButton(1.25);
 		restart.y -= 50;
 		restart.clickPress = () -> {
 			if (pressed)
@@ -41,6 +42,7 @@ class PauseSubState extends MusicBeatSubstate
 			var res = () -> {
 				FlxG.sound.music.volume = 0;
 				PlayState.instance.vocals.volume = 0;
+				CustomFadeTransition.nextCamera = cam;
 				MusicBeatState.resetState();
 			}
 			pressed = true;
@@ -58,17 +60,17 @@ class PauseSubState extends MusicBeatSubstate
 		buttons.push(restart);
 		add(restart);
 
-		var resume:HillButton = new HillButton(null, "RESUME", 48, 80, 10);
-		resume.scale.scale(1.25);
-		resume.screenCenter();
+		var resume:HillButton = new HillButton(null, "RESUME", 52, 80, 10);
+		resume.screenCenter();		
+		resume.scaleButton(1.25);
 		resume.y -= restart.height * 1.25 + 60;
 		resume.clickPress = () -> if (!pressed) close();
 		buttons.push(resume);
 		add(resume);
 
-		var exit:HillButton = new HillButton(null, "EXIT", 48, 100, 10);
-		exit.scale.scale(1.25);
+		var exit:HillButton = new HillButton(null, "EXIT", 52, 100, 10);
 		exit.screenCenter();
+		exit.scaleButton(1.25);
 		exit.y += restart.height - 15;
 		exit.clickPress = () -> {
 			if (pressed)

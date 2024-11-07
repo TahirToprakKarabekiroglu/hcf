@@ -1,8 +1,6 @@
 package;
 
 import flixel.FlxCamera;
-import flixel.util.FlxTimer;
-import flixel.text.FlxText;
 import flixel.FlxG;
 import flixel.group.FlxSpriteGroup;
 
@@ -10,7 +8,7 @@ class HillButton extends FlxSpriteGroup
 {
     var button:FlxHillSprite;
     var button2:FlxHillSprite;    
-    var text:FlxText;
+    var text:FlxHillText;
 
     public var playSound:Bool = true;
     public var clickPress:Void -> Void;
@@ -42,13 +40,11 @@ class HillButton extends FlxSpriteGroup
 
         if (texts != null)
         {
-            text = new FlxText();
-            text.setFormat(Paths.font("vcr.ttf"), size);
-            text.alignment = FlxTextAlign.CENTER;
-            text.offset.x -= offx;
-            text.offset.y -= offy;
+            text = new FlxHillText();
             text.text = texts.split('_').join('');
-
+            text.x += offx;
+            text.y += offy;
+            text.size = size;
             add(text);
         }
 
@@ -61,7 +57,7 @@ class HillButton extends FlxSpriteGroup
                 x.offset.x -= 15;
             add(x);
         }
-        else if (texts == "UNLOCK" || texts == "UPGRADE" || texts == "RESUME" || texts == "EXIT_" || texts == "OK")
+        else if (texts == "UNLOCK" || texts == "UPGRADE" || texts == "RESUME" || texts == "EXIT_" || texts == "OK" || texts == "RESTART_")
         {
             var x:FlxHillSprite = new FlxHillSprite();
             x.loadGraphic(Paths.image("accept"));
@@ -74,7 +70,7 @@ class HillButton extends FlxSpriteGroup
         {
             var coin:FlxHillSprite = new FlxHillSprite();
             coin.loadGraphic(Paths.image("coin"));
-            coin.offset.set(-10, -10);
+            coin.offset.set(8, -10);
             add(coin);
         }
         else if (texts == "RESTART")
@@ -85,41 +81,40 @@ class HillButton extends FlxSpriteGroup
             coin.offset.y -= 15;
             add(coin);
         }
+        else if (texts == "START")
+        {
+            var coin:FlxHillSprite = new FlxHillSprite();
+            coin.loadGraphic(Paths.image("icon-start"));
+            coin.offset.x -= -10;
+            coin.offset.y -= 20;
+            add(coin);
+        }
     }
 
-    var timer:FlxTimer;
     override function update(elapsed:Float)
     {
         super.update(elapsed);
 
         if (FlxG.mouse.overlaps(this, _camera) && active)
         {
+            if (FlxG.mouse.justPressed)
+            {
+                if (playSound && SoundButton.soundEnabled)
+                    FlxG.sound.play(Paths.sound("click"));
+            }
             if (FlxG.mouse.pressed)
             {
                 button.visible = false;
                 button2.visible = true;
             }
-            else if (FlxG.mouse.justReleased)
+            if (FlxG.mouse.justReleased)
             {
                 button.visible = true;
                 button2.visible = false;
-            }
 
-            if (FlxG.mouse.justPressed)
-            {
-                if (playSound)
-                    FlxG.sound.play(Paths.sound("click"));
-
-                if (clickPress != null && button2.visible)
+                if (clickPress != null)
                 {
-                    if (timer != null)
-                        timer.cancel();
-
-                    timer = new FlxTimer().start(0.1, (tmr) -> {
-                        clickPress();
-                        timer.destroy();
-                        timer = null;
-                    });
+                    clickPress();
                 }
             }
         }
@@ -127,6 +122,21 @@ class HillButton extends FlxSpriteGroup
         {
             button.visible = true;
             button2.visible = false;
+        }
+    }
+
+    public function scaleButton(scale:Float = 1.0)
+    {
+        for (i in members)
+        {
+            if ((i is FlxHillText))
+            {
+                var i = cast(i, FlxHillText);
+                i.size = Std.int(i.size * scale);
+                continue;
+            }
+
+            i.scale.scale(scale);
         }
     }
 }

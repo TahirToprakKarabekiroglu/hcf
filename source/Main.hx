@@ -81,9 +81,14 @@ class Main extends Sprite
 			gameHeight = Math.ceil(stageHeight / zoom);
 		}
 	
-		FlxTransitionableState.skipNextTransIn = true;
+		//FlxTransitionableState.skipNextTransIn = true;
 		
 		addChild(new FlxGame(gameWidth, gameHeight, initialState, framerate, framerate, skipSplash, startFullscreen));
+
+		FlxG.signals.preUpdate.add(() -> {
+			FlxG.mouse.useSystemCursor = true;
+			FlxG.mouse.visible = true;
+		});
 
 		#if !mobile
 		Lib.current.stage.align = "tl";

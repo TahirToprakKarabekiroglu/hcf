@@ -33,7 +33,6 @@ class UpgradeButton extends FlxSpriteGroup
         add(button2);
     }
 
-    var timer:FlxTimer;
     override function update(elapsed:Float)
     {
         super.update(elapsed);
@@ -45,28 +44,18 @@ class UpgradeButton extends FlxSpriteGroup
                 button.visible = false;
                 button2.visible = true;
             }
-            else if (FlxG.mouse.justReleased)
+            if (FlxG.mouse.justPressed)
+            {
+                if (playSound && SoundButton.soundEnabled)
+                    FlxG.sound.play(Paths.sound("click"));
+            }
+            if (FlxG.mouse.justReleased)
             {
                 button.visible = true;
                 button2.visible = false;
-            }
 
-            if (FlxG.mouse.justPressed)
-            {
-                if (playSound)
-                    FlxG.sound.play(Paths.sound("click"));
-
-                if (clickPress != null && button2.visible)
-                {
-                    if (timer != null)
-                        timer.cancel();
-
-                    timer = new FlxTimer().start(0.1, (tmr) -> {
-                        clickPress();
-                        timer.destroy();
-                        timer = null;
-                    });
-                }
+                if (clickPress != null)
+                    clickPress();
             }
         }
         else 

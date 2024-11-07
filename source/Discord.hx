@@ -78,6 +78,9 @@ class DiscordClient
 			endTimestamp = startTimestamp + endTimestamp;
 		}
 
+		if (state == null)
+			state = "Hill Climb Racing\nby Fingersoft Ltd.";
+
 		DiscordRpc.presence({
 			details: details,
 			state: state,

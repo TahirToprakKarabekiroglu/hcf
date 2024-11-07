@@ -9,8 +9,8 @@ class MaxSubstate extends MusicBeatSubstate
 {
     var prompt:FlxSprite;
     var upgrade:HillButton;
-    var titleText:FlxText;
-    var descText:FlxText;
+    var titleText:FlxHillText;
+    var descText:FlxHillText;
 
     public function new(unlock:Bool = false) 
     {
@@ -29,29 +29,31 @@ class MaxSubstate extends MusicBeatSubstate
 
         var cancel = new HillButton(null, "CANCEL", 40, 80, 15);
         cancel.x = prompt.x + prompt.width / 2 + 80;
-        cancel.scale.scale(1.5);
+        cancel.scaleButton(1.5);
         cancel.y = prompt.y + prompt.height / 1.5 + 60;
         cancel.playSound = false;
 
-        upgrade = new HillButton(null, "OK", 40, 120, 15); 
-        upgrade.scale.scale(1.5);
+        upgrade = new HillButton(null, "OK", 48, 120, 5); 
+        upgrade.scaleButton(1.5);
         upgrade.x = cancel.x - cancel.width * 2 + 95;
         upgrade.y = cancel.y;
         upgrade.clickPress = close;
         add(upgrade);
 
-        titleText = new FlxText();
-        titleText.setFormat(Paths.font("vcr.ttf"), 64);
+        titleText = new FlxHillText();
         titleText.text = "MAXIMUM LEVEL";
-        titleText.setPosition(240, 120);
+        titleText.setPosition(230, 120);
         titleText.y -= titleText.height / 2;
         add(titleText);
 
-        descText = new FlxText(240, 180);
-        descText.setFormat(Paths.font("vcr.ttf"), 40); 
+        descText = new FlxHillText(80, 180);
+        descText.size = 45;
         descText.text = "You have already upgraded this to the maximum level\navailable.";
         if (unlock)
+        {
             descText.text = "You have already unlocked this.";
+            descText.x += 60;
+        }
         add(descText);
     }    
 
